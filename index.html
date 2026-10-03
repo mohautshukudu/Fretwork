@@ -1,0 +1,605 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Fretwork: learn guitar theory</title>
+<meta name="theme-color" content="#E4EEE7">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Figtree:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme:light dark;
+  --bg:#E4EEE7;--surface:#F6FAF6;--ink:#1D2B2E;--muted:#5C6D70;--line:#C5D5CB;
+  --blue:#2F6F8F;--ok:#2E8B57;--ok-bg:#D5EEDD;--bad:#C0392B;--bad-bg:#F6D9D4;
+  --maple:#EFD6A0;--maple-line:#B9965B;--rose:#5B2E22;--string:#7D8488;
+}
+@media (prefers-color-scheme:dark){
+  :root{--bg:#142022;--surface:#1D2D2F;--ink:#E6EFEA;--muted:#93A8A5;--line:#2E4446;
+  --blue:#5FA8CC;--ok:#5CC48A;--ok-bg:#1F3D2C;--bad:#EA7A6C;--bad-bg:#432622;
+  --maple:#C9A66A;--maple-line:#8C6E3E;--string:#B9C2C4}
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Figtree,system-ui,-apple-system,"Segoe UI",sans-serif;font-size:16px;line-height:1.45}
+body{padding-top:env(safe-area-inset-top,0px)}
+h1,h2,h3{font-family:"Bricolage Grotesque",Figtree,system-ui,sans-serif;margin:0;line-height:1.15}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,.cell:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+#app{max-width:560px;margin:0 auto;min-height:100dvh;display:flex;flex-direction:column}
+.pad{padding:18px 18px 110px}
+
+/* header */
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.top h1{font-size:28px;letter-spacing:-.01em}
+.stats{display:flex;gap:14px;font-size:14px;color:var(--muted)}
+.stats b{color:var(--ink);font-size:17px}
+
+/* path */
+.unit{margin-top:26px}
+.uhead{background:var(--ac);color:#fff;border-radius:14px;padding:14px 16px}
+.uhead small{opacity:.85;font-size:13px}
+.uhead h3{font-size:20px;margin:2px 0 2px}
+.uhead p{margin:0;font-size:14px;opacity:.92}
+.nodes{display:flex;flex-direction:column;gap:14px;padding:18px 0 4px}
+.nodewrap{display:flex;flex-direction:column;align-items:center;width:84px}
+.node{width:76px;height:64px;border-radius:20px;border:0;background:var(--ac);color:#fff;font-weight:700;font-size:15px;box-shadow:0 5px 0 rgba(0,0,0,.25);position:relative;transition:transform .08s,box-shadow .08s}
+.node:active:not(:disabled){transform:translateY(4px);box-shadow:0 1px 0 rgba(0,0,0,.25)}
+.node.done{background:var(--ok)}
+.node:disabled{background:var(--line);color:var(--muted);box-shadow:0 5px 0 rgba(0,0,0,.08);cursor:not-allowed}
+.stars{font-size:12px;letter-spacing:2px;color:var(--maple-line);margin-top:8px;height:14px}
+.nlabel{font-size:12px;color:var(--muted);margin-top:6px}
+
+/* tab bar */
+.tabbar{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);z-index:5}
+.tabbar div{max-width:560px;margin:0 auto;display:flex}
+.tabbar button{flex:1;background:none;border:0;padding:14px 8px;font-weight:700;color:var(--muted)}
+.tabbar button[aria-current="page"]{color:var(--blue);box-shadow:inset 0 3px 0 var(--blue)}
+
+/* cards & buttons */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:12px}
+.card h3{font-size:18px;margin-bottom:4px}
+.card p{margin:0 0 10px;color:var(--muted)}
+.btn{border:0;border-radius:12px;padding:13px 20px;font-weight:700;background:var(--blue);color:#fff;box-shadow:0 4px 0 rgba(0,0,0,.25)}
+.btn:active:not(:disabled){transform:translateY(3px);box-shadow:0 1px 0 rgba(0,0,0,.25)}
+.btn:disabled{background:var(--line);color:var(--muted);box-shadow:none;cursor:not-allowed}
+.btn.ghost{background:transparent;color:var(--ink);border:2px solid var(--line);box-shadow:none}
+.btn.danger{background:var(--bad)}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.switch{display:flex;justify-content:space-between;align-items:center;padding:8px 0}
+.switch input{width:22px;height:22px;accent-color:var(--blue)}
+
+/* lesson & quiz shell */
+.shell{display:flex;flex-direction:column;flex:1}
+.stop{display:flex;align-items:center;gap:12px;padding:16px 18px 6px}
+.x{background:none;border:0;font-size:22px;color:var(--muted);padding:4px 8px}
+.prog{flex:1;height:12px;background:var(--line);border-radius:8px;overflow:hidden}
+.prog i{display:block;height:100%;background:var(--ok);border-radius:8px;transition:width .3s}
+.sbody{flex:1;padding:12px 18px 24px}
+.sbody h2{font-size:24px;margin-bottom:12px}
+.prose{font-size:17px}
+.prose p{margin:0 0 12px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
+.chips span{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:4px 9px;font-weight:700;font-size:15px}
+.tbl{width:100%;border-collapse:collapse;font-size:15px;margin:6px 0 12px}
+.tbl th,.tbl td{text-align:left;padding:6px 6px;border-bottom:1px solid var(--line)}
+.tbl th{color:var(--muted);font-weight:500;font-size:13px}
+pre.tab{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px;overflow-x:auto;font-size:15px;line-height:1.3}
+.play{background:var(--surface);border:2px solid var(--line);border-radius:12px;padding:9px 14px;font-weight:700;margin:4px 6px 4px 0}
+.play:hover{border-color:var(--blue)}
+.play.sm{padding:3px 10px;border-radius:8px;margin:0}
+.play.big{padding:14px 20px;margin:2px 0 14px}
+
+/* fretboard */
+.fbwrap{overflow-x:auto;margin:10px -4px 14px;padding:0 4px}
+svg.fb{width:100%;max-width:560px;display:block;height:auto}
+.board{fill:var(--maple)}
+.fret{stroke:var(--maple-line);stroke-width:2}
+.nut{stroke:var(--rose);stroke-width:6}
+.str{stroke:var(--string)}
+.inlay{fill:var(--maple-line);opacity:.4}
+.fnum{fill:var(--muted);font-size:11px;text-anchor:middle}
+.dot circle{stroke:#fff;stroke-width:2}
+.dot text{fill:#fff;font:700 11px Figtree,system-ui,sans-serif;text-anchor:middle;pointer-events:none}
+.d-note circle{fill:var(--rose)}.d-root circle{fill:var(--blue)}.d-sel circle{fill:var(--ink)}
+.d-ok circle{fill:var(--ok)}.d-bad circle{fill:var(--bad)}
+.rowhl{fill:var(--blue);opacity:.16}
+.cell{fill:transparent;cursor:pointer}
+.cell:hover{fill:rgba(255,255,255,.35)}
+
+/* options */
+.opts{display:grid;gap:10px;margin-top:6px}
+.opt{display:flex;align-items:center;gap:12px;text-align:left;background:var(--surface);border:2px solid var(--line);border-radius:14px;padding:14px 14px;font-size:17px;font-weight:500;box-shadow:0 3px 0 var(--line)}
+.opt kbd{font:700 12px Figtree,sans-serif;border:1px solid var(--line);border-radius:6px;padding:1px 6px;color:var(--muted)}
+.opt.sel{border-color:var(--blue);background:color-mix(in srgb,var(--blue) 12%,var(--surface))}
+.opt.ok{border-color:var(--ok);background:var(--ok-bg)}
+.opt.bad{border-color:var(--bad);background:var(--bad-bg)}
+.opt:disabled{cursor:default}
+@media (min-width:640px){.opts.two{grid-template-columns:1fr 1fr}}
+
+/* bottom bar */
+.qbar{position:sticky;bottom:0;background:var(--bg);border-top:2px solid var(--line);padding:14px 18px calc(14px + env(safe-area-inset-bottom,0px));display:flex;gap:14px;align-items:center;justify-content:space-between}
+.qbar.ok{background:var(--ok-bg);border-color:var(--ok)}
+.qbar.bad{background:var(--bad-bg);border-color:var(--bad)}
+.fbtxt{font-size:15px;flex:1}
+.fbtxt b{display:block;font-size:17px}
+.qbar.ok b{color:var(--ok)}.qbar.bad b{color:var(--bad)}
+
+/* results */
+.center{text-align:center;padding-top:60px}
+.big-n{font-family:"Bricolage Grotesque",sans-serif;font-size:64px;font-weight:700;line-height:1}
+.bigstars{font-size:34px;letter-spacing:6px;color:var(--maple-line);margin:10px 0}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+(()=>{
+'use strict';
+/* ---------- tiny helpers ---------- */
+const app=document.getElementById('app');
+const rnd=n=>Math.floor(Math.random()*n);
+const pick=a=>a[rnd(a.length)];
+const shuffle=a=>{a=[...a];for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]]}return a};
+const sample=(a,n)=>shuffle(a).slice(0,n);
+const mod=(n,m)=>((n%m)+m)%m;
+
+/* ---------- storage ---------- */
+const KEY='fretwork-v1';
+const fresh=()=>({xp:0,streak:0,last:'',done:{},stars:{},miss:{},hit:{},unlockAll:false,mute:false});
+function load(){try{return Object.assign(fresh(),JSON.parse(localStorage.getItem(KEY)||'{}'))}catch(e){return fresh()}}
+let S=load();
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+const dayStr=d=>d.toLocaleDateString('en-CA');
+function touchStreak(){
+  const t=dayStr(new Date());if(S.last===t)return;
+  const y=new Date();y.setDate(y.getDate()-1);
+  S.streak=S.last===dayStr(y)?S.streak+1:1;S.last=t;
+}
+function liveStreak(){
+  const t=dayStr(new Date());const y=new Date();y.setDate(y.getDate()-1);
+  return(S.last===t||S.last===dayStr(y))?S.streak:0;
+}
+
+/* ---------- music data ---------- */
+const NOTES=['C','C♯','D','D♯','E','F','F♯','G','G♯','A','A♯','B'];
+const NOTE_LABEL=['C','C♯/D♭','D','D♯/E♭','E','F','F♯/G♭','G','G♯/A♭','A','A♯/B♭','B'];
+const NAT=['C','D','E','F','G','A','B'];
+const ALPHA=['A','B','C','D','E','F','G'];
+const OPEN=[40,45,50,55,59,64];
+const SNAME=['low E','A','D','G','B','high E'];
+const LET=['C','D','E','F','G','A','B'],LET_PC=[0,2,4,5,7,9,11];
+const MAJ=[0,2,4,5,7,9,11];
+const pcAt=(s,f)=>(OPEN[s]+f)%12;
+const accStr=d=>d>0?'♯'.repeat(d):d<0?'♭'.repeat(-d):'';
+function parse(n){const li=LET.indexOf(n[0]);let a=0;for(const ch of n.slice(1))a+=ch==='♯'?1:ch==='♭'?-1:0;return{li,pc:mod(LET_PC[li]+a,12)}}
+function spell(root,steps,semis){
+  const r=parse(root);
+  return steps.map((st,i)=>{const li=(r.li+st)%7;const t=mod(r.pc+semis[i],12);const d=mod(t-LET_PC[li]+6,12)-6;return LET[li]+accStr(d)});
+}
+const majScale=r=>spell(r,[0,1,2,3,4,5,6],MAJ);
+const triad=(r,q)=>spell(r,[0,2,4],q==='m'?[0,3,7]:[0,4,7]);
+const rootMidi=(r,low=48)=>low+mod(parse(r).pc-low,12);
+const scaleMidis=(r,low=48)=>{const m=rootMidi(r,low);return MAJ.map(x=>m+x).concat(m+12)};
+const chordMidis=(r,q,low=48)=>{const m=rootMidi(r,low);return[m,m+(q==='m'?3:4),m+7]};
+const KEYS=['C','G','D','A','E','F','B♭','E♭'];
+const QUAL=['','m','m','','','m','dim'],ROMAN=['I','ii','iii','IV','V','vi','vii°'];
+const diat=k=>majScale(k).map((n,i)=>n+QUAL[i]);
+const sigCount=sc=>{const j=sc.join('');return{s:(j.match(/♯/g)||[]).length,f:(j.match(/♭/g)||[]).length}};
+const sigLabel=sc=>{const{s,f}=sigCount(sc);return s?`${s} sharp${s>1?'s':''}`:f?`${f} flat${f>1?'s':''}`:'No sharps or flats'};
+const INTS=[[1,'minor 2nd'],[2,'major 2nd'],[3,'minor 3rd'],[4,'major 3rd'],[5,'perfect 4th'],[6,'tritone'],[7,'perfect 5th'],[8,'minor 6th'],[9,'major 6th'],[10,'minor 7th'],[11,'major 7th'],[12,'octave']];
+const INAME=Object.fromEntries(INTS);
+const ORD=['','1st','2nd','3rd','4th','5th','6th','7th'];
+
+/* ---------- audio ---------- */
+let ctx;
+function ac(){ctx=ctx||new(window.AudioContext||window.webkitAudioContext)();if(ctx.state==='suspended')ctx.resume();return ctx}
+function pluck(m,t=0,dur=1.5,vol=.22){
+  try{
+    const c=ac(),f=440*Math.pow(2,(m-69)/12),t0=c.currentTime+t;
+    const o1=c.createOscillator(),o2=c.createOscillator(),g2=c.createGain(),g=c.createGain(),lp=c.createBiquadFilter();
+    o1.type='sawtooth';o2.type='triangle';o1.frequency.value=f;o2.frequency.value=f*2.004;g2.gain.value=.35;
+    lp.type='lowpass';lp.frequency.setValueAtTime(3400,t0);lp.frequency.exponentialRampToValueAtTime(450,t0+dur);
+    g.gain.setValueAtTime(0.0001,t0);g.gain.linearRampToValueAtTime(vol,t0+.01);g.gain.exponentialRampToValueAtTime(.0008,t0+dur);
+    o1.connect(lp);o2.connect(g2);g2.connect(lp);lp.connect(g);g.connect(c.destination);
+    o1.start(t0);o2.start(t0);o1.stop(t0+dur+.05);o2.stop(t0+dur+.05);
+  }catch(e){}
+}
+const playSeq=(ns,gap=.5)=>ns.forEach((m,i)=>pluck(m,i*gap,Math.max(1,gap*2.5)));
+const playChord=ns=>ns.forEach((m,i)=>pluck(m,i*.035,2.2));
+const playProg=ch=>ch.forEach((c,i)=>c.forEach((m,j)=>pluck(m,i*1.1+j*.04,1.8)));
+function playAudio(a){if(!a)return;a.mode==='chord'?playChord(a.notes):playSeq(a.notes,a.gap||.6)}
+function sfx(ok){if(S.mute)return;ok?[72,79].forEach((m,i)=>pluck(m,i*.09,.5,.12)):pluck(45,0,.6,.14)}
+const P=(label,notes,mode='seq',gap=.45)=>`<button class="play${label?'':' sm'}" data-n="${notes.join(',')}" data-mode="${mode}" data-gap="${gap}" aria-label="${label||'Play'}">▶${label?' '+label:''}</button>`;
+const PP=(label,chords)=>`<button class="play" data-prog="${chords.map(c=>c.join(',')).join('|')}">▶ ${label}</button>`;
+document.addEventListener('click',e=>{
+  const b=e.target.closest('.play[data-n],.play[data-prog]');if(!b)return;
+  if(b.dataset.prog){playProg(b.dataset.prog.split('|').map(c=>c.split(',').map(Number)));return}
+  const n=b.dataset.n.split(',').map(Number);
+  b.dataset.mode==='chord'?playChord(n):playSeq(n,parseFloat(b.dataset.gap)||.45);
+});
+
+/* ---------- fretboard svg ---------- */
+function fretboard(o){
+  const n=o.nFrets||5,fw=62,gap=32,left=46,top=22;
+  const W=left+n*fw+12,H=top+5*gap+34;
+  const sx=f=>f===0?left-24:left+(f-.5)*fw,sy=s=>top+(5-s)*gap;
+  let h=`<svg class="fb" viewBox="0 0 ${W} ${H}" role="img" aria-label="${o.alt||'Guitar fretboard, low E string at the bottom'}" style="${n>7?'min-width:'+Math.round(W*.8)+'px':''}">`;
+  h+=`<rect class="board" x="${left}" y="${top-12}" width="${n*fw}" height="${5*gap+24}" rx="3"/>`;
+  [3,5,7,9].forEach(f=>{if(f<=n)h+=`<circle class="inlay" cx="${sx(f)}" cy="${top+2.5*gap}" r="6"/>`});
+  if(n>=12)h+=`<circle class="inlay" cx="${sx(12)}" cy="${top+1.5*gap}" r="6"/><circle class="inlay" cx="${sx(12)}" cy="${top+3.5*gap}" r="6"/>`;
+  for(let i=0;i<=n;i++)h+=`<line class="${i?'fret':'nut'}" x1="${left+i*fw}" x2="${left+i*fw}" y1="${top-12}" y2="${top+5*gap+12}"/>`;
+  if(o.row!=null)h+=`<rect class="rowhl" x="${left-46}" y="${sy(o.row)-gap/2}" width="${n*fw+46}" height="${gap}" rx="6"/>`;
+  for(let s=0;s<6;s++)h+=`<line class="str" x1="${left-40}" x2="${left+n*fw}" y1="${sy(s)}" y2="${sy(s)}" stroke-width="${(2.8-s*.34).toFixed(2)}"/>`;
+  for(let f=1;f<=n;f++)h+=`<text class="fnum" x="${sx(f)}" y="${H-8}">${f}</text>`;
+  (o.dots||[]).forEach(d=>{h+=`<g class="dot d-${d.kind||'note'}"><circle cx="${sx(d.f)}" cy="${sy(d.s)}" r="12"/>${d.label?`<text x="${sx(d.f)}" y="${sy(d.s)+4}">${d.label}</text>`:''}</g>`});
+  if(o.click)for(let s=0;s<6;s++){if(o.row!=null&&o.row!==s)continue;
+    for(let f=0;f<=n;f++){const x=f===0?left-46:left+(f-1)*fw,w=f===0?46:fw;
+      h+=`<rect class="cell" tabindex="0" role="button" aria-label="${SNAME[s]} string, fret ${f}" data-s="${s}" data-f="${f}" x="${x}" y="${sy(s)-gap/2}" width="${w}" height="${gap}"/>`}}
+  return `<div class="fbwrap">${h}</svg></div>`;
+}
+
+/* ---------- question builders ---------- */
+function mc(prompt,correct,wrongs,explain,extra={}){
+  const w=[...new Set(wrongs)].filter(x=>x!==correct);
+  const options=shuffle([correct,...sample(w,Math.min(3,w.length))]);
+  return{kind:'mc',prompt,options,answer:correct,explain,...extra};
+}
+function fretid(s,f,n,pool){
+  const lab=NOTE_LABEL[pcAt(s,f)];
+  return mc('Which note is this?',lab,pool||NOTE_LABEL,`${f?`Fret ${f} on the ${SNAME[s]} string`:`The open ${SNAME[s]} string`} is ${lab}.`,{kind:'fretid',fb:{nFrets:n,dots:[{s,f,kind:'root'}]}});
+}
+function fretfind(s,pc,n){
+  const lab=NOTE_LABEL[pc],fr=[];
+  for(let f=0;f<=n;f++)if(pcAt(s,f)===pc)fr.push(f);
+  return{kind:'find',prompt:`Tap a ${lab} on the ${SNAME[s]} string`,sub:'Any fret that gives that note counts.',find:{s,pc,n,fr},fb:{nFrets:n,row:s},
+    explain:`${lab} on the ${SNAME[s]} string: ${fr.map(f=>f?'fret '+f:'open').join(' or ')}.`};
+}
+const g=(id,cat,fn)=>({id,cat,fn});
+const pool=(id,cat,items)=>g(id,cat,()=>{const[p,c,w,e]=pick(items);return mc(p,c,w,e||'')});
+
+/* ---------- units ---------- */
+const naturalDots=s=>{const d=[];for(let f=0;f<=12;f++){const pc=pcAt(s,f);if(LET_PC.includes(pc))d.push({s,f,label:NOTES[pc],kind:f===0||f===12?'root':'note'})}return d};
+const intRows=INTS.map(([s,n])=>`<tr><td>${s}</td><td>${n}</td><td>${P('',[52,52+s],'seq',.7)}</td></tr>`).join('');
+const keyRows=KEYS.map(k=>{const sc=majScale(k);return`<tr><td><b>${k}</b></td><td>${sc.join(' ')}</td><td>${sigLabel(sc).replace('No sharps or flats','none')}</td><td>${P('',scaleMidis(k),'seq',.28)}</td></tr>`}).join('');
+const diatTable=k=>`<table class="tbl"><tr><th>Chord</th>${ROMAN.map(r=>`<th>${r}</th>`).join('')}</tr><tr><td><b>${k}</b></td>${diat(k).map(c=>`<td>${c}</td>`).join('')}</tr></table>`;
+const penta=r=>spell(r,[0,2,3,4,6],[0,3,5,7,10]);
+const boxDots=r=>{ // box 1 relative to root fret r on low E
+  const off=[[0,3],[0,2],[0,2],[0,2],[0,3],[0,3]];const d=[];
+  off.forEach((os,s)=>os.forEach(o=>{const f=r+o,pc=pcAt(s,f);d.push({s,f,label:NOTES[pc],kind:pc===(OPEN[0]+r)%12?'root':'note'})}));return d};
+
+const UNITS=[
+{id:'u1',title:'Open strings & the alphabet',sub:'Name every string. Learn half steps and whole steps.',
+ lesson:[
+  {t:'Six strings, six notes',html:`<p>Standard tuning, thickest string to thinnest: <b>E A D G B E</b>.</p><p>Strings are numbered the other way round. The <b>1st string</b> is the thin high E. The <b>6th string</b> is the thick low E.</p><p>To remember the order: <i>Eddie Ate Dynamite, Good Bye Eddie.</i></p>`,
+   fb:{nFrets:5,dots:OPEN.map((m,s)=>({s,f:0,label:NOTES[m%12],kind:'root'}))},plays:[P('Hear the open strings',OPEN,'seq',.5)]},
+  {t:'The musical alphabet',html:`<p>Music uses seven letters, <b>A B C D E F G</b>, then starts again at A.</p><p>Most letters have a note in the gap between them, called a sharp (♯) or flat (♭). <b>B–C</b> and <b>E–F</b> have no gap note.</p><p>That makes <b>12 notes</b> before the pattern repeats:</p><div class="chips">${['A','A♯','B','C','C♯','D','D♯','E','F','F♯','G','G♯'].map(n=>`<span>${n}</span>`).join('')}</div><p>A♯ and B♭ are the same pitch with two names.</p>`,
+   plays:[P('Hear all 12 notes',Array.from({length:13},(_,i)=>57+i),'seq',.28)]},
+  {t:'Half steps and whole steps',html:`<p>The distance from one note in that list to the next is a <b>half step</b>. On guitar, that is <b>one fret</b>.</p><p>Two half steps make a <b>whole step</b>, which is two frets.</p><p>So E to F is a half step, but F to G is a whole step.</p>`,
+   fb:{nFrets:5,dots:[0,1,2,3].map(f=>({s:0,f,label:NOTES[pcAt(0,f)],kind:f?'note':'root'}))},plays:[P('Hear E, F, F♯, G',[40,41,42,43],'seq',.55)]}
+ ],
+ qa:[
+  g('u1a1','fret',()=>{const s=rnd(6),l=NOTES[OPEN[s]%12];return mc('Which note is this open string?',l,NAT,`The ${SNAME[s]} string is tuned to ${l}.`,{kind:'fretid',fb:{nFrets:5,dots:[{s,f:0,kind:'root'}]}})}),
+  g('u1a2','theory',()=>{const n=1+rnd(6),l=NOTES[OPEN[6-n]%12];return mc(`What is the open note of string ${n}? (String 1 is the thinnest.)`,l,NAT,`String ${n} is the ${SNAME[6-n]} string, tuned to ${l}.`)}),
+  g('u1a3','theory',()=>{const i=rnd(7);return mc(`Which letter comes after ${ALPHA[i]}?`,ALPHA[(i+1)%7],ALPHA,`The alphabet runs A B C D E F G and then loops back to A.`)}),
+  g('u1a4','theory',()=>{const[a,b,y]=pick([['B','C',0],['E','F',0],['C','D',1],['D','E',1],['F','G',1],['G','A',1],['A','B',1]]);return mc(`Is there a note between ${a} and ${b}?`,y?'Yes':'No',['Yes','No'],y?`Yes, ${a} and ${b} are a whole step apart, with a sharp or flat between.`:`No. ${a} and ${b} are a half step apart, so nothing sits between them.`)}),
+  g('u1a5','theory',()=>mc('How many different notes are in the musical alphabet before it repeats?','12',['7','8','10','14'],'7 letters plus the 5 sharps/flats between them makes 12.'))
+ ],
+ qb:[
+  g('u1b1','theory',()=>{const i=rnd(12);return mc(`What note is a half step above ${NOTES[i]}?`,NOTES[(i+1)%12],NOTES,`One fret up from ${NOTES[i]} is ${NOTES[(i+1)%12]}.`)}),
+  g('u1b2','theory',()=>{const i=rnd(12);return mc(`What note is a whole step above ${NOTES[i]}?`,NOTES[(i+2)%12],NOTES,`Two frets up from ${NOTES[i]} is ${NOTES[(i+2)%12]}.`)}),
+  g('u1b3','theory',()=>{const i=rnd(12);return mc(`What note is a half step below ${NOTES[i]}?`,NOTES[mod(i-1,12)],NOTES,`One fret down from ${NOTES[i]} is ${NOTES[mod(i-1,12)]}.`)}),
+  g('u1b4','theory',()=>{const i=rnd(12);return mc(`What note is a whole step below ${NOTES[i]}?`,NOTES[mod(i-2,12)],NOTES,`Two frets down from ${NOTES[i]} is ${NOTES[mod(i-2,12)]}.`)}),
+  g('u1b5','theory',()=>{const i=rnd(7),a=LET[i],b=LET[(i+1)%7],h=(LET_PC[(i+1)%7]-LET_PC[i]+12)%12===1;return mc(`${a} up to ${b} is a…`,h?'Half step':'Whole step',['Half step','Whole step'],h?`${a} to ${b} is one fret.`:`${a} to ${b} is two frets.`)}),
+  g('u1b6','theory',()=>mc('How many frets make a whole step?','2',['1','3','4','12'],'A half step is one fret, so a whole step is two.'))
+ ]},
+
+{id:'u2',title:'Notes on the fretboard',sub:'Find any note on the low E and A strings.',
+ lesson:[
+  {t:'Low E string',html:`<p>The neck just walks up the 12-note alphabet, one fret at a time. Natural notes are shown below.</p><p>The gaps follow the pattern from last unit: E–F is one fret, then two frets each to G, A and B, one to C, then two to D and E.</p>`,
+   fb:{nFrets:12,dots:naturalDots(0)},plays:[P('Hear the naturals',[40,41,43,45,47,48,50,52],'seq',.35)]},
+  {t:'A string',html:`<p>Same pattern, shifted. The open A string is A, so the naturals land on frets 0, 2, 3, 5, 7, 8, 10 and 12.</p><p>Learn naturals first. A sharp or flat is always the fret between two naturals.</p>`,
+   fb:{nFrets:12,dots:naturalDots(1)},plays:[P('Hear the naturals',[45,47,48,50,52,53,55,57],'seq',.35)]},
+  {t:'Octave shape',html:`<p>From any note on the low E string, go <b>two strings over and two frets up</b> to find the same note one octave higher.</p><p>Example: A is at fret 5 on the low E string. Two strings over and two frets up is the D string, fret 7. Also A.</p>`,
+   fb:{nFrets:9,dots:[{s:0,f:5,label:'A',kind:'root'},{s:2,f:7,label:'A',kind:'root'}]},plays:[P('Hear the octave',[45,57],'seq',.8)]},
+  {t:'Use the landmarks',html:`<p>The dots on a real neck sit at frets 3, 5, 7, 9 and 12. Use them to count.</p><p><b>Fret 12</b> is the same note as the open string, one octave up. After that the whole pattern starts over.</p>`,
+   fb:{nFrets:12,dots:[{s:0,f:0,label:'E',kind:'root'},{s:0,f:12,label:'E',kind:'root'}]},plays:[P('Hear open E and fret 12',[40,52],'seq',.8)]}
+ ],
+ qa:[
+  g('u2a1','fret',()=>fretid(rnd(2),rnd(6),5)),
+  g('u2a2','fret',()=>{const s=rnd(2),c=LET_PC.filter(pc=>[0,1,2,3,4,5].some(f=>pcAt(s,f)===pc));return fretfind(s,pick(c),5)}),
+  g('u2a3','fret',()=>{const s=rnd(2),f=1+rnd(5),l=NOTE_LABEL[pcAt(s,f)];return mc(`On the ${SNAME[s]} string, which fret is ${l}?`,`Fret ${f}`,[1,2,3,4,5].map(x=>`Fret ${x}`),`${l} is at fret ${f} on the ${SNAME[s]} string.`,{kind:'fretid',fb:{nFrets:5,row:s,dots:[]}})})
+ ],
+ qb:[
+  g('u2b1','fret',()=>fretid(rnd(2),rnd(13),12)),
+  g('u2b2','fret',()=>{const s=rnd(2);return fretfind(s,pick(LET_PC),12)}),
+  g('u2b3','fret',()=>{const s=rnd(2),f=1+rnd(11),l=NOTE_LABEL[pcAt(s,f)];return mc(`On the ${SNAME[s]} string, which fret is ${l}?`,`Fret ${f}`,Array.from({length:11},(_,i)=>`Fret ${i+1}`),`${l} is at fret ${f} on the ${SNAME[s]} string.`)}),
+  g('u2b4','fret',()=>{const n=rnd(9),l=NOTE_LABEL[pcAt(0,n)];return mc(`Low E string, fret ${n} is ${l}. Where is the same note an octave higher on the D string?`,`Fret ${n+2}`,Array.from({length:13},(_,i)=>`Fret ${i}`),`Two strings over, two frets up: D string, fret ${n+2}.`,{kind:'fretid',fb:{nFrets:12,dots:[{s:0,f:n,kind:'root'}]}})})
+ ]},
+
+{id:'u3',title:'Intervals',sub:'Measure the distance between two notes.',
+ lesson:[
+  {t:'What is an interval?',html:`<p>An <b>interval</b> is the distance between two notes, counted in half steps (frets). Each distance has a name.</p><p>Chords, scales and riffs are all built from intervals, so knowing them by ear and by name pays off everywhere.</p>`},
+  {t:'The 12 intervals',html:`<table class="tbl"><tr><th>Half steps</th><th>Name</th><th>Hear</th></tr>${intRows}</table>`},
+  {t:'Tricks to remember them',html:`<p>Songs help your ear lock onto the sound (first two notes, going up):</p><table class="tbl"><tr><th>Interval</th><th>Sounds like</th></tr><tr><td>minor 2nd</td><td>Jaws theme</td></tr><tr><td>minor 3rd</td><td>Smoke on the Water riff</td></tr><tr><td>major 3rd</td><td>When the Saints Go Marching In</td></tr><tr><td>perfect 4th</td><td>Here Comes the Bride</td></tr><tr><td>perfect 5th</td><td>Star Wars main theme</td></tr><tr><td>octave</td><td>Somewhere Over the Rainbow</td></tr></table><p>Major means wider, minor means one half step narrower. 3rds are the interval that make a chord sound happy or sad.</p>`}
+ ],
+ qa:[
+  g('u3a1','theory',()=>{const[s,n]=pick(INTS);return mc(`How many half steps (frets) in a ${n}?`,String(s),INTS.map(x=>String(x[0])),`A ${n} is ${s} half steps.`)}),
+  g('u3a2','theory',()=>{const[s,n]=pick(INTS);return mc(`Which interval is ${s} half step${s>1?'s':''}?`,n,INTS.map(x=>x[1]),`${s} half steps is a ${n}.`)}),
+  g('u3a3','theory',()=>{const[a,b]=pick([['major 3rd','minor 3rd'],['perfect 5th','perfect 4th'],['major 2nd','minor 2nd'],['major 6th','minor 6th'],['major 7th','minor 7th']]);const x=shuffle([a,b]);return mc(`Which is wider: a ${x[0]} or a ${x[1]}?`,a,[a,b],`Major intervals are one half step wider than minor ones.`)})
+ ],
+ qb:[
+  g('u3b1','theory',()=>{const r=pick(NAT),pc=parse(r).pc,[s,n]=pick(INTS.filter(x=>[3,4,5,7,9,10].includes(x[0]))),a=NOTES[(pc+s)%12];return mc(`What note is a ${n} above ${r}?`,a,NOTES,`${r} plus ${s} half steps is ${a}. (Shown with sharps; the flat spelling is the same pitch.)`)}),
+  g('u3b2','theory',()=>{const r=pick(NAT),pc=parse(r).pc,[s,n]=pick(INTS.filter(x=>[2,3,4,5,7].includes(x[0]))),b=NOTES[(pc+s)%12];return mc(`What is the interval from ${r} up to ${b}?`,n,INTS.map(x=>x[1]),`Count the half steps from ${r} to ${b}: ${s}, which is a ${n}.`)}),
+  g('u3b3','ear',()=>{const E=[[3,'minor 3rd'],[4,'major 3rd'],[5,'perfect 4th'],[7,'perfect 5th'],[12,'octave']],[s,n]=pick(E),r=52+rnd(8);return mc('Listen. What is the interval?',n,E.map(x=>x[1]),`That was a ${n}: ${s} half steps.`,{kind:'ear',audio:{notes:[r,r+s],mode:'seq',gap:.8}})}),
+  g('u3b4','ear',()=>{const E=[[1,'minor 2nd'],[2,'major 2nd'],[3,'minor 3rd'],[4,'major 3rd']],[s,n]=pick(E),r=52+rnd(8);return mc('Listen. What is the interval?',n,E.map(x=>x[1]),`That was a ${n}: ${s} half step${s>1?'s':''}.`,{kind:'ear',audio:{notes:[r,r+s],mode:'seq',gap:.8}})})
+ ]},
+
+{id:'u4',title:'The major scale',sub:'One formula, every key.',
+ lesson:[
+  {t:'The formula',html:`<p>Every major scale follows the same pattern of steps:</p><div class="chips"><span>W</span><span>W</span><span>H</span><span>W</span><span>W</span><span>W</span><span>H</span></div><p>W is a whole step (2 frets), H is a half step (1 fret).</p><p>Start on C and follow it: <b>C D E F G A B C</b>. No sharps or flats.</p>`,plays:[P('Hear C major',scaleMidis('C'),'seq',.35)]},
+  {t:'Same formula, any note',html:`<p>Start on a different note, follow the same formula, and the sharps or flats appear on their own. G major needs an F♯ to keep the half step at the end.</p><table class="tbl"><tr><th>Key</th><th>Notes</th><th>Has</th><th></th></tr>${keyRows}</table>`},
+  {t:'Key signatures',html:`<p>The sharps or flats a key uses are its <b>key signature</b>.</p><p>Sharp keys, adding one sharp each step: <b>C, G, D, A, E</b>. Flat keys, adding one flat each step: <b>C, F, B♭, E♭</b>.</p><p>Order sharps appear: <b>F C G D A E B</b>.</p><p>Notes are numbered 1 to 7 by position. Those numbers (degrees) are how musicians describe any key: the 3rd of D major is F♯.</p>`}
+ ],
+ qa:[
+  g('u4a1','theory',()=>{const F=['W','W','H','W','W','W','H'],i=rnd(7),sh=F.map((x,j)=>j===i?'_':x).join(' ');return mc(`Fill the gap in the major scale formula: ${sh}`,F[i],['W','H'],`The formula is W W H W W W H.`)}),
+  g('u4a2','theory',()=>{const k=pick(KEYS),sc=majScale(k),d=2+rnd(6),a=sc[d-1];return mc(`What is the ${ORD[d]} note of ${k} major?`,a,[...sc.filter(x=>x!==a),a[0],a[0]+'♯',a[0]+'♭'],`${k} major: ${sc.join(' ')}.`)}),
+  g('u4a3','theory',()=>{const k=pick(KEYS),sc=majScale(k),c=sc.join(' ');const o=shuffle(KEYS.filter(x=>x!==k));return mc(`Which of these is the ${k} major scale?`,c,[sc.map(n=>n[0]).join(' '),majScale(o[0]).join(' '),majScale(o[1]).join(' '),majScale(o[2]).join(' ')],`${k} major is ${c}.`)}),
+  g('u4a4','theory',()=>mc('How many different notes are in a major scale (not counting the repeated octave)?','7',['5','6','8','12'],'Seven notes: degrees 1 through 7.'))
+ ],
+ qb:[
+  g('u4b1','theory',()=>{const k=pick(KEYS),sc=majScale(k);return mc(`How many sharps or flats does ${k} major have?`,sigLabel(sc),['No sharps or flats','1 sharp','2 sharps','3 sharps','4 sharps','1 flat','2 flats','3 flats'],`${k} major: ${sc.join(' ')}.`)}),
+  g('u4b2','theory',()=>{const k=pick(KEYS.slice(1)),sc=majScale(k);return mc(`Which major key has ${sigLabel(sc)}?`,k,KEYS,`${k} major: ${sc.join(' ')}.`)}),
+  g('u4b3','theory',()=>{const k=pick(KEYS.slice(1)),sc=majScale(k),acc=pick(sc.filter(n=>n.length>1)),bad=LET.flatMap(l=>[l+'♯',l+'♭']).filter(n=>!sc.includes(n));return mc(`Which of these notes is in ${k} major?`,acc,[acc[0],...bad],`${k} major: ${sc.join(' ')}.`)}),
+  g('u4b4','theory',()=>{const k=pick(KEYS),sc=majScale(k),i=1+rnd(6),a=sc[i],sh=sc.map((n,j)=>j===i?'_':n).join(' ');return mc(`Which note is missing from ${k} major? ${sh}`,a,[a[0],a[0]+'♯',a[0]+'♭',LET[(LET.indexOf(a[0])+1)%7],LET[(LET.indexOf(a[0])+2)%7]],`${k} major: ${sc.join(' ')}.`)})
+ ]},
+
+{id:'u5',title:'Chords & triads',sub:'Build major and minor chords. Meet the chords of a key.',
+ lesson:[
+  {t:'Triads: three notes',html:`<p>A <b>triad</b> stacks the 1st, 3rd and 5th notes of a scale. C major: <b>C E G</b>.</p><p>Play all three together and you have a chord.</p>`,plays:[P('Hear C major',chordMidis('C',''),'chord')]},
+  {t:'Major vs minor',html:`<p><b>Major triad</b>: root, major 3rd (4 half steps), perfect 5th (7).<br><b>Minor triad</b>: root, minor 3rd (3 half steps), perfect 5th (7).</p><p>Only the middle note moves. C major is <b>C E G</b>, C minor is <b>C E♭ G</b>.</p>`,plays:[P('C major',chordMidis('C',''),'chord'),P('C minor',chordMidis('C','m'),'chord')]},
+  {t:'The chords of a key',html:`<p>Build a triad on each note of a major scale and you get seven chords, labelled with Roman numerals. Capitals are major, lowercase minor, ° diminished.</p>${diatTable('C')}${diatTable('G')}<p>I, IV and V are major. ii, iii and vi are minor. Most songs lean on these.</p>`,plays:[PP('Hear I – V – vi – IV in C',[[48,52,55],[43,47,50],[45,48,52],[41,45,48]])]},
+  {t:'Relative minor',html:`<p>The <b>6th note</b> of a major scale is the root of its <b>relative minor</b>. They share the same notes.</p><p>C major and A minor. G major and E minor. D major and B minor.</p>`}
+ ],
+ qa:[
+  g('u5a1','theory',()=>{const R=['C','D','E','F','G','A','B','B♭','E♭'],r=pick(R),q=pick(['','m']),c=triad(r,q).join(' '),o=triad(r,q?'':'m').join(' ');return mc(`Which notes make ${r}${q} ${q?'(minor)':'(major)'}?`,c,[o,triad(pick(R),q).join(' '),triad(pick(R),q?'':'m').join(' ')],`${r}${q}: ${c}.`)}),
+  g('u5a2','theory',()=>mc('A triad is built from which scale degrees?','1, 3, 5',['1, 2, 3','1, 4, 5','1, 3, 7','1, 5, 8'],'Stack the 1st, 3rd and 5th.')),
+  g('u5a3','theory',()=>mc('What changes when a major chord becomes minor?','The 3rd drops a half step',['The root drops a half step','The 5th drops a half step','The 3rd rises a half step'],'Major 3rd (4 half steps) becomes minor 3rd (3 half steps).')),
+  g('u5a4','theory',()=>{const R=['C','D','E','F','G','A','B'],r=pick(R),q=pick(['','m']),t=triad(r,q);return mc(`Is ${t.join(' ')} a major or minor chord?`,q?'Minor':'Major',['Major','Minor'],`${t[0]} to ${t[1]} is ${q?3:4} half steps: a ${q?'minor':'major'} 3rd.`)})
+ ],
+ qb:[
+  g('u5b1','ear',()=>{const q=pick(['','m']),r=48+rnd(12);return mc('Listen. Is this chord major or minor?',q?'Minor':'Major',['Major','Minor'],q?'Minor: the 3rd is lower, which gives the darker sound.':'Major: the brighter sound comes from the higher 3rd.',{kind:'ear',audio:{notes:[r,r+(q?3:4),r+7],mode:'chord'}})}),
+  g('u5b2','theory',()=>{const k=pick(KEYS),d=rnd(7),c=diat(k);return mc(`In ${k} major, what is chord ${ROMAN[d]}?`,c[d],c.concat(majScale(k).map(n=>n+'m')),`${k} major chords: ${c.join(', ')}.`)}),
+  g('u5b3','theory',()=>{const k=pick(KEYS),d=rnd(7),c=diat(k);return mc(`In ${k} major, ${c[d]} is chord…`,ROMAN[d],ROMAN,`${k} major chords: ${c.join(', ')}.`)}),
+  g('u5b4','theory',()=>{const k=pick(KEYS),sc=majScale(k);return mc(`What is the relative minor of ${k} major?`,sc[5]+'m',sc.filter((_,i)=>i!==5).map(n=>n+'m'),`The 6th note of ${k} major is ${sc[5]}, so the relative minor is ${sc[5]}m.`)}),
+  g('u5b5','theory',()=>mc('Which chords in a major key are minor?','ii, iii, vi',['I, IV, V','ii, IV, vi','iii, V, vii°'],'I, IV, V are major; ii, iii, vi are minor; vii° is diminished.'))
+ ]},
+
+{id:'u6',title:'Minor pentatonic',sub:'The five-note scale behind most guitar solos.',
+ lesson:[
+  {t:'Five notes',html:`<p>Pentatonic means five notes. <b>Minor pentatonic</b> is the root, ♭3, 4, 5 and ♭7.</p><p>A minor pentatonic: <b>A C D E G</b>.</p><p>It is the 7-note natural minor scale with two tense notes left out (the 2nd and ♭6), which is why it is so easy to make sound good.</p>`,plays:[P('Hear A minor pentatonic',[45,48,50,52,55,57],'seq',.4)]},
+  {t:'Box 1 shape',html:`<p>This is the shape to learn first. Each string has two notes. Blue dots are the root, A.</p>`,fb:{nFrets:9,dots:boxDots(5)},plays:[P('Hear the box',[45,48,50,52,55,57,60,62,64,67,69,72],'seq',.3)]},
+  {t:'Move it anywhere',html:`<p>The root of the box on the low E string tells you the key. Slide the same shape to change key.</p><table class="tbl"><tr><th>Key</th><th>Low E fret</th></tr><tr><td>G minor pentatonic</td><td>3</td></tr><tr><td>A minor pentatonic</td><td>5</td></tr><tr><td>B minor pentatonic</td><td>7</td></tr><tr><td>C minor pentatonic</td><td>8</td></tr><tr><td>D minor pentatonic</td><td>10</td></tr></table>`}
+ ],
+ qa:[
+  g('u6a1','theory',()=>{const r=pick(['A','E','D','G','B','C']),c=penta(r).join(' ');const o=pick(['A','E','D','G','B','C'].filter(x=>x!==r));return mc(`Which notes are in ${r} minor pentatonic?`,c,[penta(o).join(' '),spell(r,[0,1,2,4,5],[0,2,4,7,9]).join(' '),spell(r,[0,1,2,3,4,5,6],[0,2,3,5,7,8,10]).join(' ')],`${r} minor pentatonic: ${c}.`)}),
+  g('u6a2','theory',()=>mc('How many notes are in a pentatonic scale?','5',['4','6','7','8'],'Penta means five.')),
+  g('u6a3','theory',()=>mc('Which scale degrees make the minor pentatonic?','1 ♭3 4 5 ♭7',['1 2 3 5 6','1 ♭3 4 ♭6 ♭7','1 3 4 5 7'],'Root, ♭3, 4, 5, ♭7.')),
+  g('u6a4','fret',()=>fretfind(pick([0,2,5]),9,12))
+ ],
+ qb:[
+  g('u6b1','theory',()=>{const m={G:3,A:5,B:7,C:8,D:10},r=pick(Object.keys(m));return mc(`Box 1 of ${r} minor pentatonic is rooted at which fret of the low E string?`,`Fret ${m[r]}`,[3,5,7,8,10,12].map(x=>`Fret ${x}`),`${r} is at fret ${m[r]} on the low E string.`)}),
+  g('u6b2','fret',()=>{const d=pick(boxDots(5)),l=NOTES[pcAt(d.s,d.f)];return mc('This dot is part of A minor box 1. Which note is it?',l,['A','C','D','E','G','B','F'],`${SNAME[d.s]} string, fret ${d.f} is ${l}.`,{kind:'fretid',fb:{nFrets:9,dots:[{s:d.s,f:d.f,kind:'sel'}]}})}),
+  g('u6b3','theory',()=>{const r=pick(['A','E','D','G']),rem=spell(r,[1,5],[2,8]),p=penta(r),a=pick(rem);return mc(`Which of these is NOT in ${r} minor pentatonic?`,a,p,`${r} minor pentatonic is ${p.join(' ')}. The 2nd (${rem[0]}) and ♭6 (${rem[1]}) are left out.`)}),
+  g('u6b4','ear',()=>{const five=Math.random()<.5;return mc('Listen. How many different notes does this scale have?',five?'Five':'Seven',['Five','Seven'],five?'That was minor pentatonic: five notes per octave.':'That was natural minor: seven notes per octave.',{kind:'ear',audio:{notes:five?[45,48,50,52,55,57]:[45,47,48,50,52,53,55,57],mode:'seq',gap:.4}})})
+ ]},
+
+{id:'u7',title:'Rhythm & reading tab',sub:'Count beats. Read guitar tablature.',
+ lesson:[
+  {t:'Note values',html:`<p>In 4/4 time, a quarter note gets one beat.</p><table class="tbl"><tr><th>Note</th><th>Beats</th></tr><tr><td>Whole</td><td>4</td></tr><tr><td>Half</td><td>2</td></tr><tr><td>Quarter</td><td>1</td></tr><tr><td>Eighth</td><td>½</td></tr><tr><td>Sixteenth</td><td>¼</td></tr></table><p>A <b>dot</b> after a note adds half its length again. A dotted half note lasts 3 beats. A <b>rest</b> is silence of the same length.</p>`},
+  {t:'Bars & time signatures',html:`<p>Music is grouped into <b>bars</b>. The time signature tells you how.</p><p>The <b>top number</b> is how many beats are in each bar. The <b>bottom number</b> is which note gets the beat (4 means quarter note).</p><p>4/4 is four quarter-note beats per bar. 3/4 is a waltz.</p>`},
+  {t:'Reading tab',html:`<p>Tab has six lines, one per string. The <b>bottom line is the low E</b>. Numbers are frets. <b>0</b> means open.</p><pre class="tab">e|-----------|\nB|-----------|\nG|-----------|\nD|-----------|\nA|-----0--2--|\nE|--3--------|</pre><p>Read left to right: G, A, B.</p><p>Symbols: <b>h</b> hammer-on, <b>p</b> pull-off, <b>/</b> slide, <b>b</b> bend, <b>x</b> muted.</p>`,plays:[P('Hear it',[43,45,47],'seq',.6)]}
+ ],
+ qa:[pool('u7a','theory',[
+  ['How many beats is a whole note in 4/4?','4',['1','2','3','8'],'Whole = 4 beats.'],
+  ['How many beats is a half note in 4/4?','2',['1','3','4','½'],'Half = 2 beats.'],
+  ['How many beats is a quarter note in 4/4?','1',['2','3','4','½'],'Quarter = 1 beat.'],
+  ['How many eighth notes fit in one quarter note?','2',['1','3','4','8'],'Eighth = ½ beat.'],
+  ['How many sixteenth notes fit in one quarter note?','4',['2','3','6','8'],'Sixteenth = ¼ beat.'],
+  ['What does the top number of a time signature tell you?','How many beats are in each bar',['How fast to play','How loud to play','The key of the song'],'Top number = beats per bar.'],
+  ['What does the bottom 4 in 4/4 mean?','A quarter note gets one beat',['There are four bars','Play it four times','There are four sharps'],'Bottom number = which note gets the beat.'],
+  ['What does a dot after a note do?','Makes it half as long again',['Doubles its length','Halves its length','Makes it short and sharp'],'Dotted = 1.5× the length.'],
+  ['How many beats is a dotted half note in 4/4?','3',['2','2.5','4'],'2 beats + half of 2 = 3.'],
+  ['In 3/4 time, how many quarter notes fit in a bar?','3',['2','4','6'],'The top number is 3.'],
+  ['What does a rest mean?','Silence for a set length',['Hold the last note','Play softer','Repeat the bar'],'A rest is silent for the length of its note value.']
+ ])],
+ qb:[pool('u7b1','theory',[
+  ['In guitar tab, which line is the low E string?','The bottom line',['The top line','The middle line','Any line'],'Tab is drawn like the guitar: low E at the bottom.'],
+  ['What does a number on a tab line show?','Which fret to play',['Which finger to use','How long to hold it','Pick direction'],'Numbers are frets.'],
+  ['What does a 0 mean in tab?','Play the open string',['Mute the string','Skip the string','Play fret 10'],'0 is the open string.'],
+  ['In tab, what does "h" mean?','Hammer-on',['Harmonic','Hold','High note'],'h = hammer-on.'],
+  ['In tab, what does "p" mean?','Pull-off',['Pick','Pause','Palm mute'],'p = pull-off.'],
+  ['In tab, what does "/" between two numbers mean?','Slide',['Divide the beat','Bend','Mute'],'/ = slide.'],
+  ['In tab, what does "x" mean?','A muted note',['Fret 10','Repeat','Hammer-on'],'x = muted.']
+ ]),
+  g('u7b2','fret',()=>{const s=rnd(6),f=rnd(8),l=NOTE_LABEL[pcAt(s,f)];return mc(`In tab, a ${f} on the ${SNAME[s]} string line is which note?`,l,NOTE_LABEL,`${f?`Fret ${f}`:'Open'} on the ${SNAME[s]} string is ${l}.`)})
+ ]}
+];
+const ACC=['#2F6F8F','#A8702C','#3A8672','#8B4A5E','#5967A8','#9A5A38','#4B7A38'];
+
+/* ---------- node model ---------- */
+const NODES=UNITS.flatMap(u=>[
+  {id:u.id+'-lesson',u,type:'lesson',label:'Learn'},
+  {id:u.id+'-qa',u,type:'quiz',label:'Quiz 1',gens:u.qa},
+  {id:u.id+'-qb',u,type:'quiz',label:'Quiz 2',gens:u.qb},
+  {id:u.id+'-test',u,type:'test',label:'Test',gens:[...u.qa,...u.qb]}
+]);
+const unlocked=i=>S.unlockAll||i===0||!!S.done[NODES[i-1].id];
+
+/* ---------- question set builders ---------- */
+const keyOf=q=>q.prompt+JSON.stringify(q.fb&&q.fb.dots||'')+JSON.stringify(q.audio||'');
+function build(gens,n,weighted){
+  const out=[],seen=new Set();let ring=[],tries=0;
+  while(out.length<n&&tries++<n*12){
+    let gen;
+    if(weighted){const w=gens.map(x=>1+2*Math.min(3,S.miss[x.id]||0)),t=w.reduce((a,b)=>a+b,0);let r=Math.random()*t;gen=gens[w.findIndex(x=>(r-=x)<0)]||gens[0]}
+    else{if(!ring.length)ring=shuffle(gens);gen=ring.pop()}
+    const q=gen.fn();q.gid=gen.id;const k=keyOf(q);
+    if(seen.has(k))continue;seen.add(k);out.push(q);
+  }
+  return out;
+}
+
+/* ---------- views ---------- */
+function tabbar(cur){return`<nav class="tabbar" aria-label="Main"><div><button data-tab="path" ${cur==='path'?'aria-current="page"':''}>Path</button><button data-tab="practice" ${cur==='practice'?'aria-current="page"':''}>Practice</button></div></nav>`}
+function bindTabs(){app.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>b.dataset.tab==='path'?renderPath():renderPractice())}
+function header(){return`<div class="top"><h1>Fretwork</h1><div class="stats"><span><b>${liveStreak()}</b> day streak</span><span><b>${S.xp}</b> XP</span></div></div>`}
+
+function renderPath(){
+  window.scrollTo(0,0);
+  let h=`<div class="pad">${header()}`;
+  UNITS.forEach((u,ui)=>{
+    h+=`<section class="unit" style="--ac:${ACC[ui%ACC.length]}"><div class="uhead"><small>Unit ${ui+1}</small><h3>${u.title}</h3><p>${u.sub}</p></div><div class="nodes">`;
+    NODES.forEach((n,i)=>{
+      if(n.u!==u)return;
+      const k=NODES.filter(x=>x.u===u).indexOf(n),off=[0,36,66,36][k]||0,ok=!!S.done[n.id],st=S.stars[n.id]||0;
+      h+=`<div class="nodewrap" style="margin-left:${off}px"><button class="node ${ok?'done':''}" data-i="${i}" ${unlocked(i)?'':'disabled'} aria-label="${u.title}: ${n.label}${ok?', completed':''}">${ok?'✓ ':''}${n.label}</button><div class="stars" aria-hidden="true">${n.type!=='lesson'&&st?'★'.repeat(st)+'☆'.repeat(3-st):''}</div></div>`;
+    });
+    h+=`</div></section>`;
+  });
+  app.innerHTML=h+`</div>`+tabbar('path');
+  bindTabs();
+  app.querySelectorAll('.node').forEach(b=>b.onclick=()=>startNode(+b.dataset.i));
+}
+
+function startNode(i){
+  const n=NODES[i];
+  if(n.type==='lesson')return runLesson(n);
+  runSession(build(n.gens,n.type==='test'?12:8),{node:n,title:`${n.u.title}: ${n.label}`});
+}
+
+function renderPractice(){
+  window.scrollTo(0,0);
+  const doneUnits=UNITS.filter(u=>S.done[u.id+'-lesson']);
+  const mixedGens=(doneUnits.length?doneUnits:UNITS).flatMap(u=>[...u.qa,...u.qb]);
+  const all=UNITS.flatMap(u=>[...u.qa,...u.qb]);
+  app.innerHTML=`<div class="pad">${header()}
+  <div class="card"><h3>Mixed review</h3><p>10 questions from the units you've started, weighted toward the ones you miss.</p><button class="btn" id="p-mix">Start</button></div>
+  <div class="card"><h3>Ear training</h3><p>Listen and name intervals, chords and scales. Headphones help.</p><button class="btn" id="p-ear">Start</button></div>
+  <div class="card"><h3>Fretboard drills</h3><p>Name notes and tap them on the neck, plus tab reading.</p><button class="btn" id="p-fret">Start</button></div>
+  <div class="card"><h3>Settings</h3>
+   <label class="switch"><span>Unlock every lesson</span><input type="checkbox" id="s-unlock" ${S.unlockAll?'checked':''}></label>
+   <label class="switch"><span>Answer sounds</span><input type="checkbox" id="s-sound" ${S.mute?'':'checked'}></label>
+   <button class="btn ghost danger" id="s-reset" style="margin-top:8px;color:var(--bad)">Reset all progress</button></div></div>`+tabbar('practice');
+  bindTabs();
+  $('p-mix').onclick=()=>runSession(build(mixedGens,10,true),{title:'Mixed review',practice:true});
+  $('p-ear').onclick=()=>runSession(build(all.filter(x=>x.cat==='ear'),10,true),{title:'Ear training',practice:true});
+  $('p-fret').onclick=()=>runSession(build(all.filter(x=>x.cat==='fret'),10,true),{title:'Fretboard drills',practice:true});
+  $('s-unlock').onchange=e=>{S.unlockAll=e.target.checked;save()};
+  $('s-sound').onchange=e=>{S.mute=!e.target.checked;save()};
+  $('s-reset').onclick=()=>{if(confirm('Reset all progress, XP and streak?')){S=fresh();save();renderPractice()}};
+}
+function $(id){return document.getElementById(id)}
+
+function runLesson(n){
+  const u=n.u,cards=u.lesson;let i=0;
+  function draw(){
+    const c=cards[i];
+    app.innerHTML=`<div class="shell"><div class="stop"><button class="x" id="quit" aria-label="Close lesson">✕</button><div class="prog" role="progressbar" aria-valuenow="${i}" aria-valuemax="${cards.length}"><i style="width:${i/cards.length*100}%"></i></div></div>
+    <div class="sbody"><h2>${c.t}</h2><div class="prose">${c.html}</div>${c.fb?fretboard(c.fb):''}<div>${(c.plays||[]).join('')}</div></div>
+    <div class="qbar"><button class="btn ghost" id="back" ${i?'':'disabled'}>Back</button><button class="btn" id="next">${i===cards.length-1?'Finish lesson':'Continue'}</button></div></div>`;
+    $('quit').onclick=renderPath;
+    $('back').onclick=()=>{i--;draw()};
+    $('next').onclick=()=>{if(i<cards.length-1){i++;window.scrollTo(0,0);draw()}else finishLesson(n)};
+  }
+  draw();
+}
+function finishLesson(n){
+  const first=!S.done[n.id];S.done[n.id]=true;const gain=first?10:2;S.xp+=gain;touchStreak();save();
+  app.innerHTML=`<div class="shell"><div class="sbody center"><div class="big-n">+${gain}</div><h2 style="margin:6px 0 4px">Lesson complete</h2><p class="prose" style="color:var(--muted)">Now test it with a quiz.</p></div><div class="qbar" style="justify-content:center"><button class="btn" id="go">Back to path</button></div></div>`;
+  $('go').onclick=renderPath;
+}
+
+function runSession(qs,meta){
+  if(!qs.length){app.innerHTML=`<div class="pad"><p>No questions available.</p><button class="btn" id="b">Back</button></div>`;$('b').onclick=renderPath;return}
+  const st={queue:qs.map(q=>({...q})),total:qs.length,cleared:0,first:0,sel:null,checked:false};
+  function draw(){
+    const q=st.queue[0];st.sel=null;st.checked=false;
+    let body=`<h2>${q.prompt}</h2>${q.sub?`<p style="color:var(--muted);margin:-4px 0 10px">${q.sub}</p>`:''}`;
+    if(q.kind==='ear')body+=`<button class="play big" id="replay">▶ Play sound</button>`;
+    if(q.fb||q.kind==='find')body+=`<div id="fbhold">${fretboard({...q.fb,click:q.kind==='find'})}</div>`;
+    if(q.options)body+=`<div class="opts ${q.options.every(o=>o.length<14)?'two':''}">${q.options.map((o,i)=>`<button class="opt" data-o="${i}"><kbd>${i+1}</kbd><span>${o}</span></button>`).join('')}</div>`;
+    app.innerHTML=`<div class="shell"><div class="stop"><button class="x" id="quit" aria-label="Quit">✕</button><div class="prog" role="progressbar" aria-valuenow="${st.cleared}" aria-valuemax="${st.total}"><i style="width:${st.cleared/st.total*100}%"></i></div></div>
+    <div class="sbody">${body}</div><div class="qbar" id="bar"><div class="fbtxt" id="fbtxt" aria-live="polite"></div><button class="btn" id="act" disabled>Check</button></div></div>`;
+    $('quit').onclick=()=>{if(confirm('Quit this session? Progress on it will be lost.'))meta.practice?renderPractice():renderPath()};
+    $('act').onclick=act;
+    if(q.kind==='ear'){$('replay').onclick=()=>playAudio(q.audio);setTimeout(()=>playAudio(q.audio),350)}
+    app.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{if(st.checked)return;st.sel=+b.dataset.o;app.querySelectorAll('.opt').forEach(x=>x.classList.toggle('sel',x===b));$('act').disabled=false});
+    if(q.kind==='find')bindCells(q);
+  }
+  function bindCells(q){
+    app.querySelectorAll('.cell').forEach(c=>{
+      const pickIt=()=>{if(st.checked)return;st.sel=+c.dataset.f;$('fbhold').innerHTML=fretboard({...q.fb,click:true,dots:[{s:q.find.s,f:st.sel,kind:'sel'}]});bindCells(q);$('act').disabled=false;
+        const f=app.querySelector(`.cell[data-f="${st.sel}"]`);if(f)f.focus({preventScroll:true})};
+      c.onclick=pickIt;c.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();pickIt()}};
+    });
+  }
+  function act(){st.checked?next():check()}
+  function check(){
+    const q=st.queue[0];let ok;
+    if(q.kind==='find')ok=q.find.fr.includes(st.sel);else ok=q.options[st.sel]===q.answer;
+    st.checked=true;sfx(ok);
+    if(q.gid){const m=ok?S.hit:S.miss;m[q.gid]=(m[q.gid]||0)+1}
+    if(q.kind==='find'){
+      const dots=q.find.fr.map(f=>({s:q.find.s,f,kind:'ok'}));
+      if(!ok)dots.push({s:q.find.s,f:st.sel,kind:'bad'});
+      $('fbhold').innerHTML=fretboard({...q.fb,dots});
+    }else{
+      app.querySelectorAll('.opt').forEach((b,i)=>{b.disabled=true;b.classList.remove('sel');if(q.options[i]===q.answer)b.classList.add('ok');else if(i===st.sel)b.classList.add('bad')});
+    }
+    $('bar').className='qbar '+(ok?'ok':'bad');
+    $('fbtxt').innerHTML=`<b>${ok?'Correct':'Not quite'}</b>${q.explain||''}`;
+    $('act').textContent='Continue';$('act').disabled=false;$('act').focus({preventScroll:true});
+    const retry=!ok&&!q._again;
+    if(ok&&!q._again)st.first++;
+    st.last={ok,retry};
+  }
+  function next(){
+    const q=st.queue.shift();
+    if(st.last.retry)st.queue.push({...q,_again:true});else st.cleared++;
+    st.queue.length?draw():finish();
+  }
+  function finish(){
+    const acc=st.first/st.total,stars=acc>=.9?3:acc>=.7?2:1;
+    let msg='Session complete',passed=true;
+    if(meta.node){
+      const n=meta.node;passed=n.type!=='test'||acc>=.7;
+      if(passed){S.done[n.id]=true;S.stars[n.id]=Math.max(S.stars[n.id]||0,stars)}
+      else msg='Not quite. You need 70% on a test.';
+      if(passed)msg=n.type==='test'?'Test passed':'Quiz complete';
+    }
+    const gain=st.first*2+(passed?5:0);S.xp+=gain;touchStreak();save();
+    app.innerHTML=`<div class="shell"><div class="sbody center"><div class="big-n">${Math.round(acc*100)}%</div><div class="bigstars" aria-label="${stars} of 3 stars">${'★'.repeat(stars)}${'☆'.repeat(3-stars)}</div><h2>${msg}</h2><p class="prose" style="color:var(--muted)">${st.first} of ${st.total} right first time &middot; +${gain} XP</p></div><div class="qbar" style="justify-content:center;gap:10px"><button class="btn ghost" id="again">Again</button><button class="btn" id="go">Continue</button></div></div>`;
+    $('go').onclick=()=>meta.practice?renderPractice():renderPath();
+    $('again').onclick=()=>{
+      if(meta.node)startNode(NODES.indexOf(meta.node));
+      else renderPractice();
+    };
+  }
+  draw();
+  window.scrollTo(0,0);
+}
+
+/* keyboard: 1-4 pick, Enter to check/continue */
+document.addEventListener('keydown',e=>{
+  if(!document.getElementById('act'))return;
+  if(e.target.closest&&e.target.closest('.cell'))return;
+  if(/^[1-4]$/.test(e.key)){const b=app.querySelectorAll('.opt')[+e.key-1];if(b&&!b.disabled)b.click()}
+});
+
+renderPath();
+})();
+</script>
+</body>
+</html>
